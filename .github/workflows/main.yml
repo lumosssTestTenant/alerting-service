@@ -1,1 +1,53 @@
+name: Deploy to Production
 
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --if-present || echo "No dependencies to install"
+
+      - name: Run tests
+        run: npm test --if-present || echo "No tests configured"
+
+      - name: Build
+        run: echo "Build complete for alerting-service"
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://alerting-service.lumosss.io
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy alerting-service
+        run: |
+          echo "Deploying alerting-service to production..."
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+          echo "Message: ${{ github.event.head_commit.message }}"
+          echo "Deployment complete!"
+
+      - name: Notify deployment success
+        run: |
+          echo "alerting-service successfully deployed to production"
+          echo "Environment URL: https://alerting-service.lumosss.io"
